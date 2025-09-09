@@ -10,10 +10,829 @@
   <!-- Chart.js para o gráfico de pizza -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* CSS e estilos já incluídos no código original */
+    :root{
+      --bg:#0f172a;               /* fundo da app */
+      --panel:#111827;            /* cartões/painéis escuros */
+      --muted:#94a3b8;            /* texto secundário */
+      --text:#e5e7eb;             /* texto principal */
+      --brand:#b91c1c;            /* vermelho ferrari/brand */
+      --brand-200:#ef4444;
+      --green-600:#16a34a;
+      --orange-500:#f59e0b;
+      --blue-600:#2563eb;
+      --badge:#10b981;
+      --radius:18px;
+      --shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,
+      Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji; background:#0b1020; color:var(--text);
+    }
+    .app{display:grid; grid-template-columns:280px 1fr; min-height:100vh}
+    /* Sidebar */
+    .side{
+      background:linear-gradient(180deg, var(--brand) 0%, #7f1d1d 100%);
+      padding:22px 18px; position:sticky; top:0; height:100vh; color:#fff;
+    }
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800}
+    .brand .logo{width:42px;height:42px;display:grid;place-items:center;background:#fff;border-radius:12px;color:var(--brand)}
+    .brand small{display:block;font-weight:500;opacity:.85;margin-top:2px}
+    .nav{margin-top:22px; display:grid; gap:8px}
+    .nav button{
+      all:unset; display:flex;align-items:center;gap:10px; padding:12px 14px; border-radius:12px; cursor:pointer; font-weight:600;
+      color:#ffe9e9;
+    }
+    .nav button.active, .nav button:hover{background:rgba(255,255,255,.12)}
+    .public{margin-top:auto; padding-top:16px}
+    .public .link{all:unset; display:flex; gap:10px; cursor:pointer; padding:10px 12px; border-radius:12px}
+    .public .link:hover{background:rgba(255,255,255,.1)}
+
+    /* Topbar + pages */
+    .main{background:
+      radial-gradient(1200px 600px at -10% -10%, rgba(185,28,28,.15), transparent 50%),
+      radial-gradient(900px 600px at 110% 10%, rgba(37,99,235,.12), transparent 50%),
+      #0b1020;}
+    .container{padding:28px 30px 40px; max-width:1200px}
+    .page-title{display:flex;align-items:center;gap:14px}
+    .page-title .icon{width:38px;height:38px;border-radius:12px;background:#1f2937;display:grid;place-items:center;box-shadow:var(--shadow)}
+    .subtitle{color:var(--muted); margin-top:2px}
+
+    /* Cards */
+    .cards{margin-top:22px; display:grid; grid-template-columns:repeat(12,1fr); gap:18px}
+    .card{grid-column:span 6; background:#111827; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); position:relative; overflow:hidden}
+    .card h4{margin:0 0 8px; font-weight:700}
+    .metric{font-size:28px; font-weight:800}
+    .g-red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+    .g-green{background:linear-gradient(135deg,#10b981,#059669)}
+    .g-orange{background:linear-gradient(135deg,#f59e0b,#d97706)}
+    .g-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+    .card.color{color:#fff}
+
+    /* Banner de alertas */
+    .alert-bar{margin-top:16px;background:#1f2937;border:1px solid #374151;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+    .alert-pill{background:#fde68a;color:#a16207;font-weight:700;border-radius:999px;padding:4px 10px;font-size:12px}
+    .chip{background:#111827;border:1px solid #374151;border-radius:999px;padding:6px 10px}
+
+    /* Grid simples */
+    .grid{display:grid;gap:18px}
+    .two{grid-template-columns:1fr 1fr}
+    .three{grid-template-columns:repeat(3,1fr)}
+
+    /* Produtos */
+    .toolbar{display:flex;gap:12px;align-items:center;margin-top:20px}
+    .inp{background:#0f172a;border:1px solid #243045;color:#cbd5e1;border-radius:12px;padding:10px 12px;font:inherit;outline:none}
+    .btn{all:unset; background:#dc2626;color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+    .btn.ghost{background:transparent;border:1px solid #374151;color:#e5e7eb}
+
+    .product{background:#111827;border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+    .product img{width:100%;height:200px;object-fit:cover;display:block}
+    .product .p-body{padding:14px}
+    .badge{display:inline-block;background:#064e3b;color:#a7f3d0;font-weight:700;border-radius:999px;padding:4px 8px;font-size:12px}
+    .badge.warn{background:#7c2d12;color:#fed7aa}
+    .kv{color:var(--muted);font-size:14px}
+
+    /* Tabela */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 10px;border-bottom:1px solid #243045;text-align:left}
+    thead th{color:#cbd5e1;font-size:14px}
+
+    /* Login */
+    .login-wrap{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(900px 600px at 10% 10%, rgba(220,38,38,.14), transparent 50%), radial-gradient(800px 600px at 90% 20%, rgba(37,99,235,.14), transparent 50%), #0b1020; z-index:90}
+    .login{width:min(420px,92vw);background:#111827;border:1px solid #243045;border-radius:20px;box-shadow:var(--shadow);padding:26px}
+    .login h1{margin:0 0 4px}
+    .login p{color:var(--muted);margin:0 0 16px}
+    .login .row{display:grid;gap:10px;margin:12px 0}
+    .helper{font-size:12px;color:var(--muted);margin-top:10px}
+
+    /* Pills and status */
+    .status{display:inline-flex;align-items:center;gap:6px;background:#064e3b;color:#a7f3d0;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .status.low{background:#7c2d12;color:#fed7aa}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:120}
+    .modal.active{display:flex}
+    .modal-card{background:#111827;padding:18px;border-radius:14px;box-shadow:var(--shadow);width:min(520px,94vw)}
+    .modal-card h3{margin:0 0 8px}
+    .modal-row{display:grid;gap:8px;margin-top:8px}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+
+    /* Responsive */
+    @media (max-width: 1100px){
+      .cards{grid-template-columns:repeat(2,1fr)}
+      .card{grid-column:span 1}
+      .app{grid-template-columns:1fr}
+      .side{position:relative;height:auto}
+    }
   </style>
 </head>
 <body>
-  <!-- Conteúdo da página já incluso no código original -->
+  <!-- LOGIN -->
+  <div id="loginWrap" class="login-wrap">
+    <form class="login" onsubmit="doLogin(event)">
+      <div class="brand" style="margin-bottom:12px">
+        <div class="logo">🏎️</div>
+        <div>
+          <div style="font-weight:800;font-size:20px">TechWorks</div>
+          <small style="opacity:.85">Sistema de Gestão Ferrari</small>
+        </div>
+      </div>
+      <h1>Área Administrativa</h1>
+      <p>Acesse com <b>admin</b> / <b>123</b> (protótipo).</p>
+      <div class="row">
+        <label>Usuário</label>
+        <input id="lgUser" class="inp" placeholder="admin" required />
+      </div>
+      <div class="row">
+        <label>Senha</label>
+        <input id="lgPass" class="inp" type="password" placeholder="•••" required />
+      </div>
+      <button class="btn" style="width:100%">Entrar</button>
+      <div class="helper">Dica: este é um protótipo estático. Em produção, senhas devem ser criptografadas e a sessão protegida.</div>
+    </form>
+  </div>
+
+  <!-- APP -->
+  <div class="app" id="app" style="display:none">
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="brand">
+        <div class="logo">🏎️</div>
+        <div>
+          <div style="font-size:20px">TechWorks</div>
+          <small>Sistema de Gestão Ferrari</small>
+        </div>
+      </div>
+      <nav class="nav">
+        <button data-page="dashboard" class="active">📊 Dashboard</button>
+        <button data-page="produtos">📦 Produtos</button>
+        <button data-page="categorias">🏷️ Categorias</button>
+        <button data-page="movs">↔️ Movimentações</button>
+        <button data-page="relatorios">📄 Relatórios</button>
+      </nav>
+      <div class="public">
+        <div class="link" data-page="landing">🏠 Página Institucional</div>
+      </div>
+      <div style="margin-top:18px">
+        <button class="btn ghost" onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+      <div class="container">
+        <div id="page"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Novo Produto -->
+  <div id="produtoModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h3>Novo Produto</h3>
+      <div class="modal-row">
+        <label>Nome</label>
+        <input id="npNome" class="inp" placeholder="Nome do produto">
+        <label>Preço (R$)</label>
+        <input id="npPreco" class="inp" type="number" step="0.01" placeholder="Ex: 1250000">
+        <label>Estoque</label>
+        <input id="npEstoque" class="inp" type="number" placeholder="0">
+        <label>Categoria</label>
+        <select id="npCategoria" class="inp"></select>
+        <label>URL da Imagem</label>
+        <input id="npImg" class="inp" placeholder="https://...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeProduto()">Cancelar</button>
+        <button class="btn" onclick="addProduto()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Categoria -->
+  <div id="catModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h3>Editar Categoria</h3>
+      <input type="hidden" id="catIndex">
+      <div class="modal-row">
+        <label>Nome</label>
+        <input id="catNome" class="inp">
+        <label>Descrição</label>
+        <input id="catDesc" class="inp">
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeCategoria()">Cancelar</button>
+        <button class="btn" onclick="saveCategoria()">Salvar</button>
+      </div>
+    </div>
+  </div>
+  
+
+  <script>
+    /***** DADOS INICIAIS *****/
+    let categorias = [
+      {nome:'Supercarros V8', desc:'Modelos esportivos com motor V8, focados em alta performance e velocidade', status:'Ativa'},
+      {nome:'Hypercar Edições Limitadas', desc:'Modelos exclusivos de produção limitada com máxima potência', status:'Ativa'},
+      {nome:'GT Gran Turismo', desc:'Modelos que combinam luxo, conforto e performance equilibrada', status:'Ativa'},
+      {nome:'Corrida Track-Focused', desc:'Veículos desenvolvidos especificamente para alta performance em pista', status:'Ativa'}
+    ];
+
+    let produtos = [
+      {cod:'F488GTB', nome:'Ferrari 488 GTB', categoria:'Supercarros V8', estoque:2, min:1, custo:1200000, ativo:true,
+       img:'https://images.unsplash.com/photo-1541348263662-e068662d82af?q=80&w=1600&auto=format&fit=crop'},
+      {cod:'SF90STR', nome:'Ferrari SF90 Stradale', categoria:'Hypercar Edições Limitadas', estoque:1, min:1, custo:2800000, ativo:true,
+       img:'https://images.unsplash.com/photo-1608222351212-9ac1bc9829ad?q=80&w=1600&auto=format&fit=crop'},
+      {cod:'PORTM', nome:'Ferrari Portofino M', categoria:'GT Gran Turismo', estoque:3, min:2, custo:950000, ativo:true,
+       img:'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=1600&auto=format&fit=crop'},
+      {cod:'F488CH', nome:'Ferrari 488 Challenge', categoria:'Corrida Track-Focused', estoque:1, min:1, custo:1400000, ativo:true,
+       img:'https://images.unsplash.com/photo-1597449083791-9c3a1b2f4972?q=80&w=1600&auto=format&fit=crop'},
+      {cod:'F8TRIB', nome:'Ferrari F8 Tributo', categoria:'Supercarros V8', estoque:0, min:1, custo:1450000, ativo:true,
+       img:'https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=1600&auto=format&fit=crop'}
+    ];
+
+    let movs = [
+      {data:'14/02/2024', produto:'Ferrari F8 Tributo', tipo:'Saída', qtd:1, desc:'Venda F8 Tributo – cliente VIP', novo:0},
+      {data:'09/02/2024', produto:'Ferrari F8 Tributo', tipo:'Entrada', qtd:1, desc:'F8 Tributo – pré-venda', novo:1},
+      {data:'31/01/2024', produto:'Ferrari 488 Challenge', tipo:'Entrada', qtd:1, desc:'Aquisição 488 Challenge para track days', novo:1},
+      {data:'24/01/2024', produto:'Ferrari Portofino M', tipo:'Entrada', qtd:3, desc:'Entrada Portofino M – estoque GT', novo:3}
+    ];
+
+    let catChartInstance = null; // instancia Chart.js
+
+    /***** UTILitários *****/
+    function money(v){
+      return Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    }
+
+    /***** LOGIN *****/
+    function doLogin(e){
+      e.preventDefault();
+      const u = document.getElementById('lgUser').value.trim();
+      const p = document.getElementById('lgPass').value.trim();
+      if(u==='admin' && p==='123'){
+        sessionStorage.setItem('tw_auth','ok');
+        document.getElementById('loginWrap').style.display='none';
+        document.getElementById('app').style.display='grid';
+        go('dashboard');
+      }else{
+        alert('Credenciais inválidas. Use admin / 123 (protótipo).');
+      }
+    }
+    function logout(){
+      sessionStorage.removeItem('tw_auth');
+      location.reload();
+    }
+    (function initAuth(){
+      if(sessionStorage.getItem('tw_auth')==='ok'){
+        document.getElementById('loginWrap').style.display='none';
+        document.getElementById('app').style.display='grid';
+        go('dashboard');
+      }
+    })();
+
+    /***** NAVEGAÇÃO *****/
+    const pageEl = document.getElementById('page');
+    document.querySelectorAll('.nav [data-page], .public .link').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+        if(btn.tagName==='BUTTON') btn.classList.add('active');
+        go(btn.getAttribute('data-page'));
+      });
+    });
+
+    function go(page){
+      if(page==='dashboard') renderDashboard();
+      else if(page==='produtos') renderProdutos();
+      else if(page==='categorias') renderCategorias();
+      else if(page==='movs') renderMovs();
+      else if(page==='relatorios') renderRelatorios();
+      else if(page==='landing') renderLanding();
+      window.scrollTo({top:0,behavior:'instant'});
+    }
+
+    /***** RENDER DASHBOARD (com gráfico de pizza) *****/
+    function renderDashboard(){
+      const totalProdutos = produtos.length;
+      const totalItens = produtos.reduce((s,p)=>s+(p.estoque||0),0);
+      const abaixoMin = produtos.filter(p=>p.estoque<=p.min).length;
+      const valorEstoque = produtos.reduce((s,p)=>s+(p.estoque*p.custo),0);
+      const lowList = produtos.filter(p=>p.estoque<=p.min).map(p=>`<span class="chip">${p.nome} (${p.estoque})</span>`).join(' ');
+
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">📊</div>
+          <div>
+            <h1 style="margin:0">Dashboard Ferrari</h1>
+            <div class="subtitle">Visão geral do sistema de gestão</div>
+          </div>
+        </div>
+
+        <div class="cards">
+          <div class="card color g-red">
+            <h4>Total de Produtos</h4>
+            <div class="metric">${totalProdutos}</div>
+          </div>
+          <div class="card color g-green">
+            <h4>Valor Total Estoque</h4>
+            <div class="metric">${money(valorEstoque)}</div>
+          </div>
+          <div class="card color g-orange">
+            <h4>Alertas Estoque</h4>
+            <div class="metric">${abaixoMin}</div>
+          </div>
+          <div class="card color g-blue">
+            <h4>Itens em Estoque</h4>
+            <div class="metric">${totalItens}</div>
+          </div>
+        </div>
+
+        <div class="alert-bar">
+          <span class="alert-pill">${abaixoMin} produtos</span>
+          <span>estão com estoque baixo:</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">${lowList}</div>
+        </div>
+
+        <div style="height:18px"></div>
+        <h2 style="margin:8px 0 12px">Produtos por Categoria</h2>
+        <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:300px;background:#111827;border:1px solid #243045;border-radius:16px;padding:16px">
+            <canvas id="catChartCanvas" width="400" height="300"></canvas>
+          </div>
+          <div style="width:320px;background:#111827;border:1px solid #243045;border-radius:16px;padding:16px">
+            <h4 style="margin-top:0">Legenda</h4>
+            <div id="catLegend" class="kv" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+      `;
+
+      // preparar dados do gráfico
+      const labels = categorias.map(c=>c.nome);
+      const counts = labels.map(lbl => produtos.filter(p => p.categoria === lbl).length);
+      // cores (não especificamos estilo global; aqui só paleta)
+      const colors = ['#dc2626','#f59e0b','#2563eb','#10b981','#7c3aed','#e11d48'];
+
+      // destruir instância anterior (para evitar erro)
+      if(catChartInstance) {
+        try{ catChartInstance.destroy(); }catch(e){}
+        catChartInstance = null;
+      }
+      const ctx = document.getElementById('catChartCanvas').getContext('2d');
+      catChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels,
+          datasets: [{
+            data: counts,
+            backgroundColor: colors.slice(0, labels.length),
+            borderColor: '#0b1020',
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: { mode: 'nearest' }
+          },
+          maintainAspectRatio: false
+        }
+      });
+
+      // criar legenda simples
+      const legendEl = document.getElementById('catLegend');
+      if(legendEl){
+        legendEl.innerHTML = labels.map((l,i)=>`<div style="display:flex;align-items:center;gap:10px"><div style="width:16px;height:12px;background:${colors[i]};border-radius:3px"></div><div>${l} — <b>${counts[i]}</b></div></div>`).join('');
+      }
+    }
+// Abrir modal para editar produto existente
+function openEditProduto(index){
+  const p = produtos[index];
+  document.getElementById('npNome').value = p.nome;
+  document.getElementById('npPreco').value = p.custo;
+  document.getElementById('npEstoque').value = p.estoque;
+  document.getElementById('npImg').value = p.img;
+  document.getElementById('npCategoria').value = p.categoria || categorias[0].nome;
+  document.getElementById('produtoModal').classList.add('active');
+
+  // Substituir temporariamente a função de salvar para edição
+  const btnSave = document.querySelector('#produtoModal .modal-actions .btn:not(.ghost)');
+  btnSave.onclick = function(){
+    p.nome = document.getElementById('npNome').value.trim() || p.nome;
+    p.custo = parseFloat(document.getElementById('npPreco').value) || p.custo;
+    p.estoque = parseInt(document.getElementById('npEstoque').value) || p.estoque;
+    p.img = document.getElementById('npImg').value.trim() || p.img;
+    p.categoria = document.getElementById('npCategoria').value || p.categoria;
+    closeProduto();
+    renderProdutos();
+    renderDashboard();
+  };
+}
+
+// Excluir produto do array
+function removeProduto(index){
+  if(confirm(`Deseja realmente excluir o produto "${produtos[index].nome}"?`)){
+    produtos.splice(index,1);
+    renderProdutos();
+    renderDashboard();
+  }
+}
+
+    /***** RENDER PRODUTOS (grid + botão Novo Produto) *****/
+    function renderProdutos(){
+      const grid = produtos.map((p,i)=>`
+  <article class="product">
+    <img src="${p.img}" alt="${p.nome}" onerror="this.src='https://via.placeholder.com/600x400?text=Sem+imagem'">
+    <div class="p-body">
+      ${p.estoque <= p.min ? '<span class="badge warn">Estoque Baixo</span>' : '<span class="badge">Ativo</span>'}
+      <div style="margin-top:10px;font-size:20px;font-weight:800">${p.nome}</div>
+      <div class="kv">Categoria: <b>${p.categoria || 'N/A'}</b></div>
+      <div class="kv">Estoque: <b>${p.estoque}</b> / ${p.min} min</div>
+      <div class="kv">Preço: <b>${money(p.custo)}</b></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn ghost" onclick="openEditProduto(${i})">✏️ Editar</button>
+        <button class="btn ghost" onclick="removeProduto(${i})">🗑️ Excluir</button>
+      </div>
+    </div>
+  </article>
+`).join('');
+
+
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">📦</div>
+          <div>
+            <h1 style="margin:0">Gestão de Produtos</h1>
+            <div class="subtitle">Gerencie o catálogo Ferrari completo</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="prodSearch" class="inp" placeholder="Buscar produto..." />
+          <button id="btnNewProduct" class="btn">+ Novo Produto</button>
+          <div style="margin-left:auto;color:var(--muted)">${produtos.length} produtos encontrados</div>
+        </div>
+
+        <div id="grid" class="grid two" style="margin-top:16px">${grid}</div>
+      `;
+
+      // preencher select de categorias no modal
+      const sel = document.getElementById('npCategoria');
+      if(sel){
+        sel.innerHTML = categorias.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+      }
+
+      // listeners
+      const btnNew = document.getElementById('btnNewProduct');
+      if(btnNew) btnNew.addEventListener('click', openProduto);
+
+      const search = document.getElementById('prodSearch');
+      if(search) search.addEventListener('input', (e)=>filterCards(e.target.value));
+    }
+
+    function filterCards(q){
+      q = (q||'').toLowerCase();
+      const filtered = produtos.filter(p=>p.nome.toLowerCase().includes(q));
+      const grid = filtered.map(p=>`
+        <article class="product">
+          <img src="${p.img}" alt="${p.nome}" onerror="this.src='https://via.placeholder.com/600x400?text=Sem+imagem'">
+          <div class="p-body">
+            ${p.estoque<=p.min ? '<span class="badge warn">Estoque Baixo</span>' : '<span class="badge">Ativo</span>'}
+            <div style="margin-top:10px;font-size:20px;font-weight:800">${p.nome}</div>
+            <div class="kv">Categoria: <b>${p.categoria || 'N/A'}</b></div>
+            <div class="kv">Estoque: <b>${p.estoque}</b> / ${p.min} min</div>
+            <div class="kv">Preço: <b>${money(p.custo)}</b></div>
+          </div>
+        </article>
+      `).join('');
+      const gridEl = document.getElementById('grid');
+      if(gridEl) gridEl.innerHTML = grid || '<div class="kv">Nenhum produto encontrado.</div>';
+    }
+
+    /***** MODAIS PRODUTO *****/
+    function openProduto(){
+      document.getElementById('npNome').value='';
+      document.getElementById('npPreco').value='';
+      document.getElementById('npEstoque').value='0';
+      document.getElementById('npImg').value='';
+      // repopular categorias
+      const sel = document.getElementById('npCategoria');
+      if(sel) sel.innerHTML = categorias.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+      document.getElementById('produtoModal').classList.add('active');
+    }
+    function closeProduto(){
+      document.getElementById('produtoModal').classList.remove('active');
+    }
+    function addProduto(){
+      const nome = document.getElementById('npNome').value.trim();
+      const preco = parseFloat(document.getElementById('npPreco').value||0);
+      const estoque = parseInt(document.getElementById('npEstoque').value||0);
+      const img = document.getElementById('npImg').value.trim() || 'https://via.placeholder.com/800x500?text=Imagem';
+      const categoriaSel = document.getElementById('npCategoria').value || categorias[0].nome;
+      if(!nome){ alert('Informe o nome do produto.'); return; }
+      if(isNaN(preco) || preco <= 0){ alert('Informe um preço válido.'); return; }
+      if(isNaN(estoque) || estoque < 0){ alert('Informe um estoque válido.'); return; }
+
+      const novo = {
+        cod: 'P' + Date.now(),
+        nome,
+        categoria: categoriaSel,
+        estoque,
+        min: 1,
+        custo: preco,
+        ativo: true,
+        img
+      };
+      produtos.push(novo);
+      closeProduto();
+      renderProdutos();
+      renderDashboard(); // atualizar gráfico / métricas
+    }
+
+    /***** CATEGORIAS (listar + editar) *****/
+    function renderCategorias(){
+      const rows = categorias.map((c, i)=>`
+        <tr>
+          <td style="font-weight:700">${c.nome}</td>
+          <td>${c.desc}</td>
+          <td><span class="status">${c.status}</span></td>
+          <td><button class="btn ghost" onclick="openCategoria(${i})">✏️ Editar</button></td>
+        </tr>
+      `).join('');
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">🏷️</div>
+          <div>
+            <h1 style="margin:0">Gestão de Categorias</h1>
+            <div class="subtitle">Gerencie as categorias dos produtos Ferrari</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;background:#111827;border:1px solid #243045;border-radius:16px;padding:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+    
+
+    function openCategoria(i){
+      const c = categorias[i];
+      document.getElementById('catIndex').value = i;
+      document.getElementById('catNome').value = c.nome;
+      document.getElementById('catDesc').value = c.desc;
+      document.getElementById('catModal').classList.add('active');
+    }
+    function closeCategoria(){
+      document.getElementById('catModal').classList.remove('active');
+    }
+    function saveCategoria(){
+      const i = parseInt(document.getElementById('catIndex').value,10);
+      if(isNaN(i)) return closeCategoria();
+      const nome = document.getElementById('catNome').value.trim() || categorias[i].nome;
+      const desc = document.getElementById('catDesc').value.trim() || categorias[i].desc;
+      // atualizar
+      categorias[i].nome = nome;
+      categorias[i].desc = desc;
+      // atualizar produtos que tinham essa categoria é opcional; aqui deixamos como está (produtos referenciam string)
+      closeCategoria();
+      renderCategorias();
+      renderDashboard();
+    }
+    // Modificar renderCategorias para incluir botão de "Adicionar Categoria"
+function renderCategorias(){
+  const rows = categorias.map((c, i)=>`
+    <tr>
+      <td style="font-weight:700">${c.nome}</td>
+      <td>${c.desc}</td>
+      <td><span class="status">${c.status}</span></td>
+      <td><button class="btn ghost" onclick="openCategoria(${i})">✏️ Editar</button></td>
+    </tr>
+  `).join('');
+
+  pageEl.innerHTML = `
+    <div class="page-title">
+      <div class="icon">🏷️</div>
+      <div>
+        <h1 style="margin:0">Gestão de Categorias</h1>
+        <div class="subtitle">Gerencie as categorias dos produtos Ferrari</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <button class="btn" onclick="addCategoria()">➕ Adicionar Categoria</button>
+    </div>
+
+    <div style="margin-top:18px;background:#111827;border:1px solid #243045;border-radius:16px;padding:10px">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// Abrir modal para adicionar nova categoria
+function addCategoria(){
+  document.getElementById('catIndex').value = ''; // índice vazio = nova categoria
+  document.getElementById('catNome').value = '';
+  document.getElementById('catDesc').value = '';
+  document.getElementById('catModal').classList.add('active');
+}
+
+// Alterar saveCategoria para suportar adicionar nova categoria
+function saveCategoria(){
+  const i = document.getElementById('catIndex').value;
+  const nome = document.getElementById('catNome').value.trim();
+  const desc = document.getElementById('catDesc').value.trim();
+
+  if(!nome){ alert('O nome da categoria é obrigatório'); return; }
+
+  if(i === '') {
+    // adicionar nova categoria
+    categorias.push({nome, desc, status:'Ativa'});
+  } else {
+    // editar existente
+    categorias[i].nome = nome;
+    categorias[i].desc = desc;
+  }
+
+  closeCategoria();
+  renderCategorias();
+  renderDashboard();
+}
+
+
+    /***** MOVIMENTAÇÕES E RELATÓRIOS (simples) *****/
+    function renderMovs(){
+      const rows = movs.map(m=>`
+        <tr>
+          <td>${m.data}</td>
+          <td>${m.produto || 'Produto não encontrado'}</td>
+          <td>${m.tipo==='Entrada' ? '<span class="status">Entrada</span>' : '<span class="status low">Saída</span>'}</td>
+          <td style="font-weight:800">${m.qtd}</td>
+          <td>${m.desc}</td>
+          <td>${m.novo}</td>
+        </tr>
+      `).join('');
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">↔️</div>
+          <div>
+            <h1 style="margin:0">Movimentações de Estoque</h1>
+            <div class="subtitle">Histórico de entradas e saídas</div>
+          </div>
+        </div>
+        <div style="margin-top:18px;background:#111827;border:1px solid #243045;border-radius:16px;padding:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Produto</th>
+                <th>Tipo</th>
+                <th>Quantidade</th>
+                <th>Descrição</th>
+                <th>Novo Estoque</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderRelatorios(){
+      const rows = produtos.map(p=>`
+        <tr>
+          <td>${p.nome}</td>
+          <td>${p.categoria || 'N/A'}</td>
+          <td>${p.estoque}</td>
+          <td>${p.min}</td>
+          <td>${money(p.custo)}</td>
+          <td style="font-weight:800">${money(p.estoque * p.custo)}</td>
+        </tr>
+      `).join('');
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">📄</div>
+          <div>
+            <h1 style="margin:0">Relatórios de Estoque</h1>
+            <div class="subtitle">Análise e exportação de dados do inventário</div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <input id="relSearch" class="inp" placeholder="Buscar por nome..." />
+          <select id="relCat" class="inp">
+            <option value="">Todas as categorias</option>
+            ${categorias.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('')}
+          </select>
+          <button class="btn" onclick="exportCSV()">Exportar para CSV</button>
+        </div>
+        <div id="relBox" style="margin-top:18px;background:#111827;border:1px solid #243045;border-radius:16px;padding:10px">
+          <table id="relTable">
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Estoque Atual</th>
+                <th>Estoque Mínimo</th>
+                <th>Custo Unitário</th>
+                <th>Valor em Estoque</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      const rs = document.getElementById('relSearch');
+      if(rs) rs.addEventListener('input', e => filterReport(e.target.value));
+      const rc = document.getElementById('relCat');
+      if(rc) rc.addEventListener('change', e => filterReport(document.getElementById('relSearch').value || '', e.target.value));
+    }
+
+    function filterReport(q='', cat=''){
+      q = (q||'').toLowerCase();
+      cat = cat || document.getElementById('relCat')?.value || '';
+      const tbody = document.querySelector('#relTable tbody');
+      const rows = produtos
+        .filter(p => (!q || p.nome.toLowerCase().includes(q)) && (!cat || p.categoria === cat))
+        .map(p => `<tr><td>${p.nome}</td><td>${p.categoria || 'N/A'}</td><td>${p.estoque}</td><td>${p.min}</td><td>${money(p.custo)}</td><td style="font-weight:800">${money(p.estoque * p.custo)}</td></tr>`)
+        .join('');
+      if(tbody) tbody.innerHTML = rows || '<tr><td colspan="6">Nenhum item encontrado.</td></tr>';
+    }
+
+    function exportCSV(){
+      const header = ['Produto','Categoria','Estoque Atual','Estoque Mínimo','Custo Unitário','Valor em Estoque'];
+      const lines = produtos.map(p=>[p.nome, p.categoria || 'N/A', p.estoque, p.min, p.custo, p.estoque * p.custo]);
+      const csv = [header, ...lines].map(r=>r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'relatorio_estoque.csv';
+      a.click();
+    }
+
+    function renderLanding(){
+      pageEl.innerHTML = `
+        <div class="page-title">
+          <div class="icon">🏠</div>
+          <div>
+            <h1 style="margin:0">TechWorks – Maestria tecnológica</h1>
+            <div class="subtitle">Transformamos ideias em soluções eficientes.</div>
+          </div>
+        </div>
+
+        <section class="grid two" style="margin-top:16px">
+          <div class="card" style="background:#111827">
+            <h3>Sobre a TechWorks</h3>
+            <p>Empresa de tecnologia inovadora, especializada em desenvolvimento de software, soluções digitais e automação inteligente. Nossa missão é unir criatividade, tecnologia de ponta e confiabilidade para impulsionar pessoas e negócios.</p>
+            <ul style="color:var(--muted)">
+              <li>Inovação • Qualidade • Desempenho</li>
+              <li>Escalável, seguro e rápido</li>
+            </ul>
+          </div>
+          <div class="card" style="background:#111827">
+            <h3>Cliente em Destaque — Ferrari</h3>
+            <p>A Ferrari, fundada por Enzo Ferrari em 1939, é sinônimo de velocidade, inovação e exclusividade. Portfólio que vai de supercarros V8 a hipercarros e edições limitadas.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <span class="chip">Supercarros/Esportivos</span>
+              <span class="chip">Hypercar/Edições Limitadas</span>
+              <span class="chip">GT / Gran Turismo</span>
+              <span class="chip">Corrida / Track-Focused</span>
+            </div>
+          </div>
+        </section>
+
+        <h2 style="margin:18px 0 8px">Produtos Ativos</h2>
+        <div class="grid two">${produtos.map(p=>`
+          <article class="product">
+            <img src="${p.img}" alt="${p.nome}" onerror="this.src='https://via.placeholder.com/600x400?text=Sem+imagem'">
+            <div class="p-body">
+              <span class="badge">Ativo</span>
+              <div style="margin-top:10px;font-size:20px;font-weight:800">${p.nome}</div>
+              <div class="kv">A partir de <b>${money(p.custo)}</b></div>
+            </div>
+          </article>`).join('')}</div>
+      `;
+    }
+
+    // Inicia no dashboard por padrão (após carregar)
+    window.addEventListener('DOMContentLoaded', ()=> {
+      // se já autenticado, mostrar app
+      if(sessionStorage.getItem('tw_auth')==='ok'){ document.getElementById('loginWrap').style.display='none'; document.getElementById('app').style.display='grid'; }
+      go('dashboard');
+    });
+  </script>
 </body>
 </html>
